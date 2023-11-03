@@ -1,25 +1,36 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract NFTContract is ERC721 {
-    address public owner;
-    uint256 public experienceId;
-    
-    constructor() ERC721("TravelExperienceNFT", "EXP") {
-        owner = msg.sender;
+contract NFTContract is ERC721Enumerable, Ownable {
+    string public baseTokenURI;
+    uint256 private _tokenIdCounter;
+
+    constructor(string memory _name, string memory _symbol, string memory _baseTokenURI) ERC721(_name, _symbol) {
+        baseTokenURI = _baseTokenURI;
+        _tokenIdCounter = 0;
     }
-    
-    function createNFT(string memory _tokenURI) public {
-        require(msg.sender == owner, "Only the owner can create NFTs");
-        _mint(msg.sender, experienceId);
-        _setTokenURI(experienceId, _tokenURI);
-        experienceId++;
+
+    function setBaseURI(string memory _baseTokenURI) public onlyOwner {
+        baseTokenURI = _baseTokenURI;
     }
-    
-    function tradeNFT(address _from, address _to, uint256 _tokenId) public {
-        require(_isApprovedOrOwner(_from, _tokenId), "You are not the owner");
-        safeTransferFrom(_from, _to, _tokenId, "");
+
+    function mintNFT(address recipient) public onlyOwner {
+        _tokenIdCounter = _tokenIdCounter + 1;
+        _mint(recipient, _tokenIdCounter);
+    }
+
+    function mintMultipleNFTs(address recipient, uint256 numberOfTokens) public onlyOwner {
+        require(numberOfTokens > 0, "Number of tokens must be greater than 0");
+        for (uint256 i = 0; i < numberOfTokens; i++) {
+            _tokenIdCounter = _tokenIdCounter + 1;
+            _mint(recipient, _tokenIdCounter);
+        }
+    }
+
+    function _baseURI() internal view override returns (string memory) {
+        return baseTokenURI;
     }
 }
